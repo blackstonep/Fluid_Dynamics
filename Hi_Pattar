@@ -1,3 +1,5 @@
+//This is code from homework 3 so we can figure things out
+
 #include <iostream>
 #include "nr3.h"
 #include "ludcmp.h"
