@@ -1,0 +1,18 @@
+set key off
+set xlabel "x"
+set ylabel "y"
+set title "Streamfunction Profile"
+set ylabel norotate offset -1,0
+set view map
+set contour base
+unset surface
+set cntrparam levels incremental 0.00001,0.001,1
+splot "data.dat" u 1:2:3 w l
+
+pause -1 "Hit enter" 
+
+set title "Vorticity Profile"
+set cntrparam levels incremental -10,.05,20
+splot "data.dat" u 1:2:5 w l
+
+pause -1 "Hit enter" 
