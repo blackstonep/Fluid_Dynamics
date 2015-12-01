@@ -10,8 +10,8 @@ struct Flow {
 	const double visc = 0.1;
 	ofstream outfile; 
 
-	const double plate_lower_x = 0.25;
-	const double plate_upper_x = 0.375;
+	const double plate_upstream = 0.25;
+	const double plate_downstream = 0.375;
 	const double plate_top = 0.25;
 
 	MatDoub psi;
@@ -40,7 +40,7 @@ struct Flow {
 
 
 				//psi also 0 along and over plate surface
-				if(x >= plate_lower_x && x <= plate_upper_x && y <= plate_top){
+				if(x >= plate_upstream && x <= plate_downstream && y <= plate_top){
 					v0_y = 0.0;
 
 				}else{
@@ -56,6 +56,8 @@ struct Flow {
 	~Flow() {}
 
 	void printPsi() {
+		cout << "\n\nPrinting Psi . . . \n";
+
 		for (int j=dim-1; j>-1; j--) {
 			for (int ell=0; ell<dim; ell++) {
 				cout << setw(8)<< setprecision(2) << psi[ell][j]; 
@@ -65,6 +67,8 @@ struct Flow {
 	}
 
 	void printXi() {
+		cout << "\n\nPrinting Xi . . .\n";
+
 		for (int j=dim-1; j>-1; j--) {
 			for (int ell=0; ell<dim; ell++) {
 				cout << setw(8)<< setprecision(2) << xi[ell][j]; 
@@ -92,7 +96,7 @@ struct Flow {
 	}
 
 	void psi_update() {
-		for (int j=1; j<dim; j++) {
+		for (int j=1; j<dim-1; j++) {
 			double x = delta*j;
 
 			for (int ell=1; ell<dim; ell++) {	
@@ -102,22 +106,19 @@ struct Flow {
 				//Make sure surface is set to 
 				//	zero for all points. 
 				// 
-				if(x >= plate_lower_x && x <= plate_upper_x && y <= plate_top){
+				if(x >= plate_upstream && x <= plate_downstream && y <= plate_top){
 					psi[j][ell] = 0.0;
 				}		
+				
 				//
 				//Implementing upper boundary 
 				//	condition. 
 				//
+
 				else if (ell == dim-1) {
 					psi[j][ell] = v0 * y;
 				}
-				//
-				//Downstream bdry: dpsi/dx = 0.
-				//
-				else if (j == dim-1) {
-					psi[j][ell] = psi[j-1][ell];
-				} 
+
 				//
 				//Update interior points...
 				//
@@ -126,13 +127,21 @@ struct Flow {
 						+ psi[j][ell+1] + psi[j][ell-1] - delta * delta * xi[j][ell] )
 					+ (1.0 - w ) * psi[j][ell];
 
-				//
-				//Upstream bdry: - dpsi/dx = 0. 
-				//
+					//
+					//Upstream bdry: - dpsi/dx = 0. 
+					//
 					if (j==1) {
 						psi[0][ell] = psi[1][ell];
 					}
-				}
+					
+					//
+					//Downstream bdry: dpsi/dx = 0.
+					//
+					else if (j == dim-2) {
+						psi[j+1][ell] = psi[j][ell];
+
+					}
+				} 				
 			}
 		}
 	}
@@ -143,15 +152,15 @@ struct Flow {
 		//Top of obstruction bdry condition. 
 		//
 		int el = int(plate_top/delta);
-		for (int j=int(plate_lower_x/delta); j < int(plate_upper_x/delta); j++){
+		for (int j=int(plate_upstream/delta); j < int(plate_downstream/delta); j++){
 			xi[j][el] = psi[j][el+1] * 2.0 / (delta * delta);
 		}
 
 		//
-		//Left and right bdry condition. 
+		//Left and right obstruction bdry condition. 
 		//
-		int j_left = int(plate_lower_x / delta);
-		int j_right = int(plate_upper_x / delta); 
+		int j_left = int(plate_upstream / delta);
+		int j_right = int(plate_downstream / delta); 
 		for (int ell = 0; ell <= int(plate_top / delta); ell++) {	
 			xi[j_left][ell] = psi[j_left - 1][ell] * (2.0 / (delta*delta) );
 			xi[j_right][ell] = psi[j_right+1][ell] * (2.0 / (delta*delta) );
@@ -170,11 +179,11 @@ struct Flow {
 				//If point is ON obstruction boundary, 
 				//	continue. 
 				//
-				if ( ( (x == plate_lower_x || x == plate_upper_x ) && y <= plate_top)) {
+				if ( ( (x == plate_upstream || x == plate_downstream ) && y <= plate_top)) {
 					continue;
 				}
 
-				if (x >= plate_lower_x && x <= plate_upper_x && y == plate_top) {
+				if (x >= plate_upstream && x <= plate_downstream && y == plate_top) {
 					continue;
 				}
 
@@ -186,13 +195,13 @@ struct Flow {
 
 				double source = (1.0 / visc) * (dpsi_dy * dxi_dx - dpsi_dx * dxi_dy);
 
-				if(x > plate_lower_x && x < plate_upper_x && y < plate_top){
+				if(x > plate_upstream && x < plate_downstream && y < plate_top){
 					xi[j][ell] = 0.0;
 				}			
 				else {
 					xi[j][ell] = w * .25 * ( xi[j+1][ell] + xi[j-1][ell]
-						+ xi[j][ell+1] + xi[j][ell-1] - delta * delta * xi[j][ell] )
-					+ (1.0 - w ) * delta * delta * source;
+						+ xi[j][ell+1] + xi[j][ell-1] - delta * delta * source )
+					+ (1.0 - w ) * xi[j][ell];
 				}
 			}
 		}
@@ -213,6 +222,8 @@ struct Flow {
 		int counter = 0;
 		for (int j=0; j<dim; j++) {
 			for (int ell=0; ell<dim; ell++) {
+				double x = delta*double(j);
+				double y = delta*double(ell);				
 				//cout << "inner iterated: ell = " << ell << endl;
 				//
 				//Centerline boundaries:
@@ -222,9 +233,9 @@ struct Flow {
 					residuals_xi[j][ell] = xi[j][ell];
 				}
 				//
-				//Upper obstruction bdry.
+				//Downstream obstruction bdry.
 				//
-				else if (j == int( plate_upper_x / delta) 
+				else if (j == int( plate_downstream / delta) 
 						&& ell < int(plate_top / delta) ) {
 
 					residuals_psi[j][ell] = psi[j][ell];
@@ -232,9 +243,9 @@ struct Flow {
 												psi[j+1][ell];
 				}
 				//
-				//Lower obstruction bdry. 
+				//Upstream obstruction bdry. 
 				//
-				else if (j == int( plate_lower_x / delta) 
+				else if (j == int( plate_upstream / delta) 
 						&& ell < int(plate_top / delta) ) {
 					
 					residuals_psi[j][ell] = psi[j][ell];
@@ -244,8 +255,8 @@ struct Flow {
 				//
 				//Top obstruction bdry. 
 				//
-				else if (ell == int(plate_top / delta) && j >= int(plate_lower_x / delta) 
-								&& j <= int(plate_upper_x / delta) ) {
+				else if (ell == int(plate_top / delta) && j >= int(plate_upstream / delta) 
+								&& j <= int(plate_downstream / delta) ) {
 					residuals_psi[j][ell] = psi[j][ell];
 					residuals_xi[j][ell] = xi[j][ell] - (2.0 / (delta*delta) ) *
 												psi[j][ell+1];
@@ -253,26 +264,36 @@ struct Flow {
 				//
 				//Upstream Bdry.
 				//
+		//Should we be dividing by
+		//	2.0 to get the derivative?!
+		//
 				else if (j == 0) {
 					//cout << "on upstream. iteration no.: " << counter << "\n";
 					counter++;
-					residuals_psi[j][ell] = - (psi[j+1][ell] - psi[j][ell]) / (2.0 * delta);
+					residuals_psi[j][ell] = - (psi[j+1][ell] - psi[j][ell]) / ( delta);
 					residuals_xi[j][ell] = xi[j][ell]; 
 				}
 				//
 				//Downstream Bdry. 
 				//
 				else if (j == dim-1) {
-					residuals_psi[j][ell] = - (psi[j-1][ell] - psi[j][ell]) / (2.0 * delta);
+					residuals_psi[j][ell] = - (psi[j-1][ell] - psi[j][ell]) / (delta);
 					residuals_xi[j][ell] = xi[j][ell];
 				}
 				//
 				//Top bdry.
 				//
 				else if (ell == dim-1) {
-					residuals_psi[j][ell] = (psi[j][ell] - psi[j][ell-1]) / (2.0 * delta) 
+					residuals_psi[j][ell] = (psi[j][ell] - psi[j][ell-1]) / (delta) 
 								- v0;
 					residuals_xi[j][ell] = xi[j][ell]; 
+				}
+				//
+				//Inside of obstruction. 
+				//
+				else if (x > plate_upstream && x < plate_downstream && y < plate_top) {
+					residuals_xi[j][ell] = xi[j][ell];
+					residuals_psi[j][ell]=psi[j][ell];
 				}
 				//
 				//Interior points
@@ -355,6 +376,8 @@ struct Flow {
 		psi_update(); 
 		xi_update(); 
 
+
+
 		cout << "finished updates...\n";
 
 		residuals();
@@ -372,15 +395,17 @@ int main() {
 
 	cout<< endl;
 
-	double resid = 9000000;
-
-	for(int patrick = 0; patrick < 5; patrick++){
+	for(int patrick = 0; patrick < 10; patrick++){
 		cout << flow.sweep() << endl << endl;
+				cout << "hey girl hey\n";
 		flow.printPsi();
 		cout << endl << endl;
+		flow.printXi();
+		cout << "\n\n";
 		flow.printResiduals();
 	}
 
+	
 	//flow.printPsi(); 
 	cout<< endl;
 	//flow.printXi();
