@@ -3,24 +3,26 @@
 using namespace std;
 
 struct Flow {
-	const int dim = 17;
-	const double v0 = 1.0;
+	static const int dim = 65;
+	double v0;
 	double w;
-	const double delta = 1.0/double(dim-1);
-	const double visc = 0.1;
-	ofstream outfile; 
+        double resid_norm;
+	static const double delta = 1.0/double(dim-1);
+	double visc;
 
-	const double plate_upstream = 0.25;
-	const double plate_downstream = 0.375;
-	const double plate_top = 0.25;
+	static const double plate_upstream = 0.25;
+	static const double plate_downstream = 0.375;
+	static const double plate_top = 0.25;
 
 	MatDoub psi;
 	MatDoub xi;
 	MatDoub residuals_psi;
 	MatDoub residuals_xi;
 
-	Flow(double w_in) {
+	Flow(double w_in, double v0_in, double visc_in) {
 		w = w_in;
+                v0 = v0_in;
+                visc= visc_in;
 		xi.assign(dim, dim, 0.0); 
 		psi.assign(dim, dim, 0.0);
 		residuals_psi.assign(dim, dim, 0.0);
@@ -38,7 +40,6 @@ struct Flow {
 
 				double x = delta*double(j);
 
-
 				//psi also 0 along and over plate surface
 				if(x >= plate_upstream && x <= plate_downstream && y <= plate_top){
 					v0_y = 0.0;
@@ -54,6 +55,27 @@ struct Flow {
 	}
 
 	~Flow() {}
+        
+        void setW(double w_in){
+            w = w_in;
+        }
+        
+        void getW(){
+            cout << "w: " << w << endl;
+        }
+        
+        void setVel(double v0_in){
+            v0 = v0_in;
+        }
+        
+        void getVel(){
+            cout << "v: " << v0 << endl;
+        }
+        
+        
+        void setVisc(double visc_in){
+            visc = visc_in;
+        }
 
 	void printPsi() {
 		cout << "\n\nPrinting Psi . . . \n";
@@ -332,29 +354,7 @@ struct Flow {
 		}
 	}
 
-	double residualNorm() {
-		double norm_psi_reimann=0.0;
-		double norm_xi_reimann=0.0;
-
-		//
-		//Calculate integral using reimann sum. 
-		//
-		double integral=0.0;
-		for (int j=0; j<dim-1; j++) {
-			for (int ell=0; ell<dim-1; ell++) {
-	
-
-				double rave = 0.25*(residuals_psi[j][ell] + residuals_psi[j+1][ell] 
-								+ residuals_psi[j][ell+1] + residuals_psi[j+1][ell+1]);
-
-				integral += delta*delta*rave*rave;
-			}
-		}
-
-
-		norm_psi_reimann = sqrt(integral); 
-		cout << "Using reimann ... " << norm_psi_reimann << endl;
-
+	void residualNorm() {
 		//
 		//Calculate integral using Root mean square. 
 		//
@@ -365,53 +365,191 @@ struct Flow {
 			}
 		}
 		sum = sqrt(sum);
-
-		cout << "Using averaged... " << sum << endl; 
-
-		return sum;
+                
+                resid_norm = sum;
+                //cout << "sum: " << sum << endl;
 
 	}
 
-	double sweep() {
-		psi_update(); 
-		xi_update(); 
+	void sweep() {
+            psi_update(); 
+            xi_update(); 
 
-
-
-		cout << "finished updates...\n";
-
-		residuals();
-		return residualNorm();
-		 
+            residuals();
+            residualNorm();
 	}
+        
+        //Does the sweeps here so that way it's only one function from main
+        double allTheSweeps() {
+            int repeats = 0; 
+            double lastNorm;
+
+            for(int patrick = 0; patrick < 10000; patrick++){
+                lastNorm = resid_norm;
+                sweep();
+                
+                //checks for converging
+                if(resid_norm == lastNorm){
+                    repeats++;
+//                    if(patrick > 8000 && repeats > 1.0){
+//                        cout << "repeats: " << repeats << endl;
+//                    }
+                    
+                    //if residual has converged (avoiding extra computation time)
+                    if(repeats > 99){
+                        
+                        cout << "converged early at " << patrick << " iteration\n";
+                        return resid_norm;
+                    }
+                }
+                //if residual has updated
+                else{
+                    repeats = 0;
+                }
+            }
+            
+            return resid_norm;
+        }
+
+//	void data_out() {
+//		outfile.open("data.dat");
+//		int width = 16;
+//		outfile.setf(ios::left);
+//		outfile << "#================================"
+//						<< "================================"
+//                        << "================================\n";
+//        outfile << "#" << setw(width) << "x" << setw(width) << "y"
+//        				<< setw(width) << "Psi" << setw(width) << "Res_Psi"
+//        				<< setw(width) << "Xi" << "Res_Xi\n";
+//		outfile << "#================================"
+//						<< "================================"
+//                        << "================================\n";
+//
+//        for (int j = 0; j<dim; j++) {
+//        	double x = delta*double(j);
+//
+//        	for (int ell=0; ell<dim; ell++) {
+//        		double y = delta*double(ell);
+//
+//        		outfile << setw(width) << x << setw(width) << y
+//        				<< setw(width) << psi[j][ell] << setw(width) << residuals_psi[j][ell]
+//        				<< setw(width) << xi[j][ell] << setw(width) << residuals_xi [j][ell]
+//        				<< endl;
+//        	}
+//        	outfile << endl;
+//        }
+//        outfile.close();        			
+//
+//	}
 
 };
 
 int main() {
-	Flow flow(1.5);
-	//flow.printPsi();
-	cout << endl;
-	//flow.printXi();
 
-	cout<< endl;
-
-	for(int patrick = 0; patrick < 10; patrick++){
-		cout << flow.sweep() << endl << endl;
-				cout << "hey girl hey\n";
-		flow.printPsi();
-		cout << endl << endl;
-		flow.printXi();
-		cout << "\n\n";
-		flow.printResiduals();
-	}
-
-	
-	//flow.printPsi(); 
-	cout<< endl;
-	//flow.printXi();
-
-	//flow.printResiduals();
-
+        double resid;
+        int width = 16;
+        
+        //values from example
+        static const double w_eg = 1.5;
+        static const double vel_eg = 1.0;
+        static const double visc_eg = 0.1;
+        
+        
+        //creates original flow object with values from example
+        Flow flow(w_eg,  vel_eg, visc_eg);
+        
+        
+        
+        //evaluates just w values
+        ofstream outfile;
+        outfile.open("w_values.dat");
+        outfile.setf(ios::left);
+        outfile << "#================================"
+		<< "================================================================\n";
+        outfile << "#" << setw(width) << "w" << setw(width) << "residual norm\n";
+        
+        for(double w = 1.0; w <= 2.0; w+= 0.1){
+            cout << "\n\n";
+            flow.setW(w);
+            resid = flow.allTheSweeps();
+            outfile << setw(width) << w << setw(width) << resid << endl;
+        }
+        outfile.close();
+        
+        //return back to example value
+//        flow.getW();
+//        flow.setW(w_eg);
+//        flow.getW();
+//        flow.getVel();
+        Flow flow2(w_eg,  vel_eg, visc_eg);
+        
+        cout << "done with w\n";
+      
+        
+        //evaluates just velocity values
+        ofstream out;
+        out.open("v_values.dat");
+        out.setf(ios::left);
+        out << "#================================"
+		<< "================================================================\n";
+        out << "#" << setw(width) << "velocity" << setw(width) << "residual norm\n";
+        
+        for(double v = 0.5; v <= 10.0; v+= 0.5){
+            flow2.setVel(v);
+            flow2.getVel();
+            flow2.getW();
+            resid = flow2.allTheSweeps();
+            out << setw(width) << v << setw(width) << resid << endl;
+        }
+        out.close();
+        
+        //return back to example value
+        Flow flow3(w_eg,  vel_eg, visc_eg);
+        
+        cout << "done with vel\n";
+        
+        
+        //evaluates just viscosity values
+        ofstream outf;
+        outf.open("visc_values.dat");
+        outf.setf(ios::left);
+        outf << "#================================"
+		<< "================================================================\n";
+        outf << "#" << setw(width) << "viscosity" << setw(width) << "residual norm\n";
+        
+        for(double visc = 0.5; visc <= 10.0; visc+= 0.5){
+            flow3.setVisc(visc);
+            resid = flow3.allTheSweeps();
+            outf << setw(width) << visc << setw(width) << resid << endl;
+        }
+        outf.close();
+        
+        //return back to example value
+        Flow flow4(w_eg,  vel_eg, visc_eg);
+        
+        
+        //now evaluates how all variables affect each other
+        ofstream otf;
+        otf.open("all_the_values.dat");
+        otf << "#================================"
+		<< "================================================================\n";
+        otf << "#" << setw(width) << "w" << setw(width) << "velocity" << setw(width) << "viscosity" << setw(width) << "residual norm\n";
+        
+        for(double w = 1.0; w <= 2.0; w+= 0.1){
+            flow4.setW(w);
+            
+            for(double v = 0.5; v <= 10.0; v+= 0.5){
+                flow4.setVel(v);
+                
+                for(double visc = 0.5; visc <= 10.0; visc+= 0.5){
+                    flow4.setVisc(visc);
+                    resid = flow4.allTheSweeps();
+                    otf << setw(width) << w << setw(width) << v << setw(width) << visc << setw(width) << resid << endl;
+                }
+            }
+        }
+        
+        otf.close();
 
 	return 0; 
 }
