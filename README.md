@@ -1,9 +1,4 @@
 # Fluid_Dynamics
 Computational Physics Fall 2015 Project #2
 
-This code is still definitely wrong.
-
-I am not sure what's going on, but the code is having a temper tantrum about resetting values and I can't determine why that is.
-I've tried resetting the all the values of xi and psi with each value update so the code starts again (and we're not doing math on matricies that we've already heavily editted with old values). It makes set to reset everything mathematically. My current method appears to be incorrect though because the residuals should not be nan for velocities over two since when we run this code on any individual set of these values with velocity greater than 2, we get a value. 
-
-The alternate file is currently running to collect data, but I don't particularly trust it. I'll try something different in the morning.
+Code works sufficiently well, though takes about 45 minutes to an hour with screen on on a computer using 3.5 GHz processor running OS 10.10.5 for iMacs for each w value. Tried to circumvent this by terminating sweeps if normalized residual value for Psi did not change after 100 sweeps, implying that it converged, which vaguely helps. Unclear how to make this shorter without evaluating less data points (therefore losing information).
