@@ -3,7 +3,7 @@
 using namespace std;
 
 struct Flow {
-	const int dim = 17;
+	const int dim = 65;
 	const double v0 = 1.0;
 	double w;
 	const double delta = 1.0/double(dim-1);
@@ -385,6 +385,37 @@ struct Flow {
 		 
 	}
 
+	void data_out() {
+		outfile.open("data.dat");
+		int width = 16;
+		outfile.setf(ios::left);
+		outfile << "#================================"
+						<< "================================"
+                        << "================================\n";
+        outfile << "#" << setw(width) << "x" << setw(width) << "y"
+        				<< setw(width) << "Psi" << setw(width) << "Res_Psi"
+        				<< setw(width) << "Xi" << "Res_Xi\n";
+		outfile << "#================================"
+						<< "================================"
+                        << "================================\n";
+
+        for (int j = 0; j<dim; j++) {
+        	double x = delta*double(j);
+
+        	for (int ell=0; ell<dim; ell++) {
+        		double y = delta*double(ell);
+
+        		outfile << setw(width) << x << setw(width) << y
+        				<< setw(width) << psi[j][ell] << setw(width) << residuals_psi[j][ell]
+        				<< setw(width) << xi[j][ell] << setw(width) << residuals_xi [j][ell]
+        				<< endl;
+        	}
+        	outfile << endl;
+        }
+        outfile.close();        			
+
+	}
+
 };
 
 int main() {
@@ -395,17 +426,20 @@ int main() {
 
 	cout<< endl;
 
-	for(int patrick = 0; patrick < 10; patrick++){
+	for(int patrick = 0; patrick < 10000; patrick++){
 		cout << flow.sweep() << endl << endl;
 				cout << "hey girl hey\n";
-		flow.printPsi();
+		//flow.printPsi();
 		cout << endl << endl;
-		flow.printXi();
+		//flow.printXi();
 		cout << "\n\n";
-		flow.printResiduals();
+		//flow.printResiduals();
 	}
 
-	
+	flow.printPsi();
+	flow.printXi();
+	flow.data_out();
+
 	//flow.printPsi(); 
 	cout<< endl;
 	//flow.printXi();
