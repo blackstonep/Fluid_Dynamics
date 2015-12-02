@@ -7,7 +7,8 @@ struct Flow {
 	double v0;
 	double w;
         double resid_norm;
-	static const double delta = 1.0/double(dim-1);
+
+	static const double delta = 1.0 / 64.0;
 	double visc;
 
 	static const double plate_upstream = 0.25;
@@ -416,22 +417,24 @@ struct Flow {
         
         //Does the sweeps here so that way it's only one function from main
         double allTheSweeps() {
+        	int iter_counter = 0;
             int repeats = 0; 
             double lastNorm;
+            const double tol = 1e-7;
 
             for(int patrick = 0; patrick < 10000; patrick++){
                 lastNorm = resid_norm;
                 sweep();
                 
                 //checks for converging
-                if(resid_norm == lastNorm){
+                if( abs(resid_norm - lastNorm) <= tol) {
                     repeats++;
 //                    if(patrick > 8000 && repeats > 1.0){
 //                        cout << "repeats: " << repeats << endl;
 //                    }
                     
                     //if residual has converged (avoiding extra computation time)
-                    if(repeats > 99){
+                    if(repeats > 50){
                         
                         cout << "converged early at " << patrick << " iteration\n";
                         return resid_norm;
@@ -441,6 +444,7 @@ struct Flow {
                 else{
                     repeats = 0;
                 }
+            	
             }
             
             return resid_norm;
@@ -477,6 +481,54 @@ struct Flow {
 //
 //	}
 
+    //
+    //Increase velocity mid run to
+    //	analyze for lower w values
+    //
+    void overpower(double v_new) {
+    	v0 = v_new; 
+
+    	//
+    	//reset top boundary to higher velocity
+    	//
+    	for (int j=0; j<dim; j++) {
+    		psi[j][dim-1] = v0;
+    	}
+
+    }
+
+	void overpower_out() {
+		ofstream outfile;
+		outfile.open("overpower.dat");
+		int width = 16;
+		outfile.setf(ios::left);
+		outfile << "#================================"
+						<< "================================"
+                        << "================================\n";
+        outfile << "#" << setw(width) << "x" << setw(width) << "y"
+        				<< setw(width) << "Psi" << setw(width) << "Res_Psi"
+        				<< setw(width) << "Xi" << "Res_Xi\n";
+		outfile << "#================================"
+						<< "================================"
+                        << "================================\n";
+
+        for (int j = 0; j<dim; j++) {
+        	double x = delta*double(j);
+
+        	for (int ell=0; ell<dim; ell++) {
+        		double y = delta*double(ell);
+
+        		outfile << setw(width) << x << setw(width) << y
+        				<< setw(width) << psi[j][ell] << setw(width) << residuals_psi[j][ell]
+        				<< setw(width) << xi[j][ell] << setw(width) << residuals_xi [j][ell]
+        				<< endl;
+        	}
+        	outfile << endl;
+        }
+        outfile.close();        			
+
+	}    
+
 };
 
 int main() {
@@ -486,9 +538,24 @@ int main() {
         
         //values from example
         static const double w_eg = 1.5;
-        static const double vel_eg = 1.0;
-        static const double visc_eg = 0.1;
-        
+        static const double vel_eg = 10.0;
+        static const double visc_eg = 4.5;
+
+        Flow megaflow(1.5, 1.0, 0.1);
+
+        for (int i=0;i<10000;i++) {
+        	megaflow.sweep();
+        }
+
+        megaflow.overpower(4.0); 
+
+        for (int i=0;i<10000;i++) {
+        	megaflow.sweep();
+        }
+
+        megaflow.overpower_out();
+
+        cout << "OVERCHARGED\n";        
         
         //creates original flow object with values from example
         Flow flow(w_eg,  vel_eg, visc_eg);
@@ -503,11 +570,12 @@ int main() {
 		<< "================================================================\n";
         outfile << "#" << setw(width) << "w" << setw(width) << "residual norm\n";
         
-        for(double w = 1.0; w <= 2.0; w+= 0.1){
+        for(double w = 1.0; w <= 2.0; w+= 0.01){
             cout << "\n\n";
             flow.setW(w);
             resid = flow.allTheSweeps();
             outfile << setw(width) << w << setw(width) << resid << endl;
+            flow.reset_everything();
         }
         outfile.close();
         
@@ -535,6 +603,7 @@ int main() {
             flow2.getW();
             resid = flow2.allTheSweeps();
             out << setw(width) << v << setw(width) << resid << endl;
+
         }
         out.close();
         
@@ -564,7 +633,7 @@ int main() {
         
         
         //now evaluates how all variables affect each other
-        ofstream otf;
+/*        ofstream otf;
         otf.open("all_the_values.dat");
         otf << "#================================"
 		<< "================================================================\n";
@@ -585,6 +654,10 @@ int main() {
         }
         
         otf.close();
+*/
+
+
+
 
 	return 0; 
 }
