@@ -401,7 +401,7 @@ struct Flow {
     }
     
     //runs a single sweep
-    void sweep() {
+    void one_sweep() {
         psi_update();
         xi_update();
         
@@ -416,7 +416,7 @@ struct Flow {
         
         for(int sweep = 0; sweep < 10000; sweep++){
             lastNorm = psi_resid_norm;
-            sweep();
+            one_sweep();
             
             //checks for converging
             if(psi_resid_norm == lastNorm){
@@ -492,8 +492,6 @@ int main() {
     
     for(double v = 0.5; v <= 10.0; v+= 0.5){
         flow2.setVel(v);
-        flow2.getVel();
-        flow2.getW();
         resid = flow2.allTheSweeps();
         out << setw(width) << v << setw(width) << resid << endl;
     }
