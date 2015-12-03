@@ -1,0 +1,37 @@
+set xlabel "w"
+set ylabel "Residual Norms {/Symbol y}"
+set title "Residual Norms of Streamfunction v. Relaxation Parameter for various Tolerances"
+plot "w_values_tol=-6.dat" title "Tol -6", "w_values_tol=-7.dat" title "Tol -7", "w_values_tol=-8.dat" title "Tol -8", "w_values_tol=-9.dat" title "Tol -9"
+
+set terminal postscript enhanced 
+set output "| ps2pdf - w_graphs.pdf"
+replot
+
+pause -1 "hit enter"
+
+set terminal x11
+set title "Convergence Time v. Relaxation Parameter, Tol -7"
+set key off
+set ylabel "Iterations Until Convergence"
+plot "w_and_times.dat" u 1:3
+
+set terminal postscript
+set output "| ps2pdf - convergences.pdf"
+replot
+
+pause -1 "hit enter"
+
+set terminal x11
+set key on
+set xlabel "Viscosity"
+set ylabel "Residual Norms {/Symbol y}"
+set title "Residual Norms of Streamfunction v. Viscosity for various Tolorences"
+plot "visc_values_tol=-4.dat" w l title "Tol -4", "visc_values_tol=-6.dat" w l title "Tol -6", "visc_values_tol=-7.dat" w l title "Tol -7", "visc_values_tol=-8.dat" w l title "Tol -8", "visc_values_tol=-9.dat" w l title "Tol -9"
+
+set terminal postscript enhanced 
+set output "| ps2pdf - visc_graphs.pdf"
+replot
+
+pause -1 "hit enter"
+
+

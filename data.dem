@@ -1,0 +1,54 @@
+set key off
+set xlabel "x"
+set ylabel "y"
+set title "Nominal Residue Streamfunction Profile: (w, v, {/Symbol n}) = (1.5, 1.0, 0.1)"
+set ylabel norotate offset -1,0
+set view map
+set contour base
+unset surface
+set cntrparam levels incremental -100.0,0.01,100
+splot "data.dat" u 1:2:3 w l
+set terminal postscript
+set output "| ps2pdf - streamfunction.pdf"
+replot
+
+pause -1 "Hit enter" 
+
+set terminal x11
+set title "Nominal Residue Vorticity Profile: (w, v, {/Symbol n}) = (1.5, 1.0, 0.1)"
+set cntrparam levels incremental -100,0.1,100
+splot "data.dat" u 1:2:5 w l
+set terminal postscript
+set output "| ps2pdf - vorticity.pdf"
+replot
+
+pause -1 "Hit enter" 
+
+reset
+
+set terminal x11
+set key off
+set xlabel "x"
+set ylabel "y" 
+set zlabel "{/Symbol y}"
+set title "Surface Plot of {/Symbol y}, (w, v, {/Symbol n}) = (1.5, 1.0, 0.1)"
+
+splot "data.dat" u 1:2:3 w l
+
+set terminal postscript enhanced
+set output "| ps2pdf - streamsurface.pdf"
+replot 
+
+pause -1 "hit enter"
+
+set terminal x11
+set zlabel "{/Symbol x}"
+set title "Surface Plot of {/Symbol x}, (w, v, {/Symbol n}) = (1.5, 1.0, 0.1)"
+
+splot "data.dat" u 1:2:5 w l
+
+set terminal postscript enhanced 
+set output "| ps2pdf - vortsurface.pdf"
+replot 
+
+pause -1 "hit enter"

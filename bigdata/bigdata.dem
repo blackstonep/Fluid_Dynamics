@@ -1,0 +1,52 @@
+set key off
+set xlabel "x"
+set ylabel "y"
+set title "Streamfunction Profile, v = "
+set ylabel norotate offset -1,0
+set view map
+set contour base
+unset surface
+set cntrparam levels incremental -4.0,0.01,1
+splot "data.dat" u 1:2:3 w l
+set terminal postscript
+set output "| ps2pdf - streamfunction.pdf"
+replot
+
+pause -1 "Hit enter" 
+
+set terminal x11
+set title "Vorticity Profile"
+set cntrparam levels incremental -10,1.0,20
+splot "data.dat" u 1:2:5 w l
+set terminal postscript
+set output "| ps2pdf - vorticity.pdf"
+replot
+
+pause -1 "Hit enter" 
+
+reset
+
+set terminal x11
+set key off
+set xlabel "x"
+set ylabel "y" 
+set zlabel "{/Symbol y}"
+
+splot "data.dat" u 1:2:3 w l
+
+set terminal postscript enhanced
+set output "| ps2pdf - streamsurface.pdf"
+replot 
+
+pause -1 "hit enter"
+
+set terminal x11
+set zlabel "{/Symbol x}"
+
+splot "data.dat" u 1:2:5 w l
+
+set terminal postscript enhanced 
+set output "| ps2pdf - vortsurface.pdf"
+replot 
+
+pause -1 "hit enter"

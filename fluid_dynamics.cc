@@ -419,7 +419,7 @@ struct Flow {
 };
 
 int main() {
-	Flow flow(1.5);
+	Flow flow(1.6);
 	//flow.printPsi();
 	cout << endl;
 	//flow.printXi();
@@ -428,7 +428,6 @@ int main() {
 
 	for(int patrick = 0; patrick < 10000; patrick++){
 		cout << flow.sweep() << endl << endl;
-				cout << "hey girl hey\n";
 		//flow.printPsi();
 		cout << endl << endl;
 		//flow.printXi();
@@ -436,15 +435,15 @@ int main() {
 		//flow.printResiduals();
 	}
 
-	flow.printPsi();
-	flow.printXi();
+	//flow.printPsi();
+	//flow.printXi();
 	flow.data_out();
 
 	//flow.printPsi(); 
 	cout<< endl;
 	//flow.printXi();
 
-	//flow.printResiduals();
+	flow.printResiduals();
 
 
 	return 0; 
